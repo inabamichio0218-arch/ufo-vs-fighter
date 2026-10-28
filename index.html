@@ -83,7 +83,7 @@ const rand=(a,b)=>a+Math.random()*(b-a), clamp=(n,a,b)=>Math.max(a,Math.min(b,n)
 function place(el,x,y,w){el.style.left=(x/W*100)+'%';el.style.top=(y/H*100)+'%';if(w)el.style.width=(w/W*100)+'%'}
 function banner(t,k='neutral'){msg.className=k;msg.textContent=t}
 function makeQuestion(){retryPending=false;serial++;phase='playing';bullets=[];enemyShots=[];sparks=[];blasts=[];impactAt=0;damageUntil=0;ship.classList.remove('damaged');stage.classList.remove('screen-hit');const a=Math.floor(rand(2,10)),b=Math.floor(rand(2,10));answer=a*b;let vals=[answer];while(vals.length<3){let v=Math.round(answer+rand(-14,15));if(v>0&&v<=81&&!vals.includes(v))vals.push(v)}vals.sort(()=>Math.random()-.5); // three clear, distinct choices
-ufos.forEach((u,i)=>{u.number=vals[i];u.active=true;u.phase=rand(0,6.28);u.speed=rand(.6,1.4);u.el.querySelector('.value').textContent=vals[i];u.el.style.display='block'});correct=vals.indexOf(answer);$('#question').textContent=a+' × '+b+' = ?';$('#level').textContent=(round+1)+' / 10問';$('#score').textContent='SCORE '+score;banner('');}
+ufos.forEach((u,i)=>{u.number=vals[i];u.active=true;u.phase=rand(0,6.28);u.speed=rand(.90,1.20);u.el.querySelector('.value').textContent=vals[i];u.el.style.display='block'});correct=vals.indexOf(answer);$('#question').textContent=a+' × '+b+' = ?';$('#level').textContent=(round+1)+' / 10問';$('#score').textContent='SCORE '+score;banner('');}
 function shoot(now){if(phase!=='playing'||now-lastShot<260)return;lastShot=now;bullets.push({x:shipX,y:1405,vy:-1450,trail:0});for(let j=0;j<7;j++)sparks.push({x:shipX+rand(-15,15),y:1400,vx:rand(-140,140),vy:rand(-50,180),life:.23,color:'#ffe15b',r:rand(3,8)})}
 function boom(x,y,big=true){
   // A heavy cinematic detonation: white-hot ignition, roiling flames,
@@ -128,12 +128,16 @@ $('#info').onclick=()=>{holdL=holdR=holdF=false;$('#infoScreen').classList.add('
 $('#backGame').onclick=()=>{$('#infoScreen').classList.remove('open');$('#infoScreen').setAttribute('aria-hidden','true');const elapsed=performance.now()-pausedAt;if(nextAt)nextAt+=elapsed;if(impactAt)impactAt+=elapsed;if(damageUntil)damageUntil+=elapsed};
 $('#close').onclick=()=>{$('#overlay').classList.remove('open');nextAt&& (nextAt+=performance.now()-pausedAt)};$('#again').onclick=reset;$('#reset').onclick=reset;
 function frame(now){let dt=clamp((now-(former||now))/1000,0,.045);former=now;const modal=$('#overlay').classList.contains('open')||$('#infoScreen').classList.contains('open');if(!modal){if(phase==='playing'&&holdF)shoot(now);if(impactAt&&now>=impactAt){impactAt=0;damageShip()}if(damageUntil&&now>=damageUntil){damageUntil=0;ship.classList.remove('damaged');stage.classList.remove('screen-hit')}shipX=clamp(shipX+(Number(holdR)-Number(holdL))*620*dt,130,995);place(ship,shipX-169,1341,338);
-ufos.forEach((u,i)=>{if(!u.active)return;// Keep the three UFOs in separate horizontal flight corridors.
-// The left/center/right lanes never share the same laser path.
-const lanes=[190,562,935];
-const travel=i===1?45:18; // avoid clipping at either screen edge
-u.x=lanes[i]+Math.sin(now*.001*u.speed+u.phase)*travel;
-u.y=630+i*216+Math.sin(now*.0012+u.phase)*27;
+// All three UFOs cruise across most of the screen, with independent rhythms.
+// Their different speeds/phase changes make occasional crossing possible,
+// but prevent a stationary 'escort' from blocking the correct answer indefinitely.
+ufos.forEach((u,i)=>{if(!u.active)return;
+const t=now*.001;
+const rate=[.82,1.04,1.27][i]*u.speed;
+const wave=Math.sin(t*rate+u.phase);
+const secondary=.15*Math.sin(t*rate*1.81+u.phase*1.37+i*1.7);
+u.x=clamp(562+322*(wave+secondary),182,943);
+u.y=625+i*208+48*Math.sin(t*(.89+i*.17)+u.phase*.79);
 place(u.el,u.x-166,u.y-120,332)});
 if(phase==='playing')for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.y+=b.vy*dt;if(b.y<230){bullets.splice(i,1);continue}let collided=false;for(let j=0;j<3;j++){const u=ufos[j];if(!u.active)continue;if(Math.abs(b.x-u.x)<130&&Math.abs(b.y-u.y)<81){bullets.splice(i,1);hitUfo(u);collided=true;break}}if(collided)break}
 if(nextAt&&now>nextAt){nextAt=0;if(phase==='finished')showEnd();else if(phase==='feedback'){if(retryPending)retryQuestion();else if(round<10)makeQuestion()}}

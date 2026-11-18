@@ -86,6 +86,81 @@ html, body {
   touch-action:pinch-zoom;
 }
 
+
+/* 文化祭向け：クリア時だけの勝利演出。ゲーム画面や遊び方画面は変更しない */
+#stage{container-type:size;}
+#overlay.victory{
+  background:radial-gradient(ellipse at 50% 35%,rgba(23,56,120,.92),rgba(2,5,24,.98) 75%);
+  overflow:hidden;
+  isolation:isolate;
+}
+#overlay.victory #panel{
+  position:relative;z-index:2;
+  background:linear-gradient(160deg,#25315e 0%,#101c43 60%,#211c4c 100%);
+  border:3px solid #ffe88c;border-radius:26px;
+  box-shadow:0 0 12px #fff6bd,0 0 35px #ffc72b9e, inset 0 0 20px #6b9cff42;
+  padding:7% 5% 6%;
+  max-height:94%;overflow-y:auto;scrollbar-width:thin;
+  animation:victoryArrive .65s cubic-bezier(.2,1.2,.35,1) both;
+}
+#overlay.victory #panelTitle{
+  font-size:clamp(30px,9.5cqw,58px);
+  line-height:1.14;
+  letter-spacing:.03em;
+  margin:0 0 3%;
+  font-weight:1000;
+  color:#ffe665;
+  -webkit-text-stroke:1px #b65c15;
+  text-shadow:0 3px 0 #983912,0 6px 0 #462044,0 0 19px #fff4a1;
+  animation:victoryGlow 1.5s ease-in-out infinite alternate;
+}
+#overlay.victory #panelText{font-size:clamp(17px,5.3cqw,29px);line-height:1.45;margin-bottom:3%;font-weight:850}
+#overlay.victory .victory-ship{font-size:clamp(42px,13cqw,78px);line-height:1.05;filter:drop-shadow(0 0 12px #62ebff);animation:victoryShip 2.3s ease-in-out infinite}
+#overlay.victory .victory-message{font-weight:1000;color:#fff;letter-spacing:.02em;margin:.25em 0}
+#overlay.victory .victory-score{font-size:clamp(25px,8.2cqw,46px);font-weight:1000;color:#ffde65;text-shadow:0 0 14px #e96c24;margin:.35em 0}
+#overlay.victory .victory-detail{font-size:clamp(16px,4.5cqw,25px);font-weight:900;color:#e9f5ff;margin:.3em 0}
+#overlay.victory .victory-perfect{font-size:clamp(26px,8.5cqw,48px);font-weight:1000;letter-spacing:.04em;color:#fff698;text-shadow:0 0 12px #ffc400,0 0 28px #ff9d00;animation:victoryGlow 1s ease-in-out infinite alternate}
+#overlay.victory .footer{display:none}
+#overlay.victory #again{
+  display:block!important;width:95%;margin:5% auto 0;
+  padding:4% 3%;min-height:52px;
+  font-size:clamp(19px,5.6cqw,32px);
+  font-weight:1000;line-height:1.2;
+  color:#4c1b19;background:linear-gradient(#fff6aa,#ffc72b 70%,#ef921a);
+  border:2px solid #fff4b1;border-radius:18px;
+  box-shadow:0 5px 0 #a95618,0 0 21px #ffd33b9c;
+  animation:victoryButton 1.7s ease-in-out infinite alternate;
+}
+#overlay.victory .victory-confetti{
+  position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1;
+}
+#overlay.victory .victory-piece{
+  position:absolute;top:-12%;left:var(--x);
+  width:var(--w);height:var(--h);border-radius:2px;
+  background:var(--color);opacity:.96;
+  box-shadow:0 0 7px var(--color);
+  animation:victoryFall var(--duration) linear var(--delay) infinite;
+}
+#overlay.victory .victory-firework{
+  position:absolute;z-index:1;pointer-events:none;
+  width:34%;aspect-ratio:1;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg,#ffe976 0deg 4deg,transparent 4deg 25deg);
+  mask:radial-gradient(circle,transparent 0 24%,black 26% 50%,transparent 53%);
+  opacity:.65;animation:victoryFirework 2.1s ease-out infinite;
+}
+#overlay.victory .victory-firework.f1{left:0%;top:8%}
+#overlay.victory .victory-firework.f2{right:0%;top:39%;animation-delay:1s;filter:hue-rotate(145deg)}
+@keyframes victoryArrive{from{opacity:.3;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+@keyframes victoryGlow{from{filter:brightness(.92)}to{filter:brightness(1.3)}}
+@keyframes victoryShip{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-7px) rotate(6deg)}}
+@keyframes victoryButton{from{filter:brightness(1)}to{filter:brightness(1.2)}}
+@keyframes victoryFall{from{transform:translate3d(0,-10px,0) rotate(0deg)}to{transform:translate3d(var(--drift),115cqh,0) rotate(720deg)}}
+@keyframes victoryFirework{0%{transform:scale(.18) rotate(0deg);opacity:0}22%{opacity:.75}100%{transform:scale(1.5) rotate(35deg);opacity:0}}
+@media(prefers-reduced-motion:reduce){
+ #overlay.victory *{animation:none!important}
+ #overlay.victory .victory-confetti,#overlay.victory .victory-firework{display:none}
+}
+
 </style>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 </head><body><script>
@@ -129,8 +204,44 @@ function damageShip(){
 }
 function hitUfo(u){if(phase!=='playing')return;const good=u.number===answer;phase='feedback';boom(u.x,u.y,good);u.el.style.display='none';if(good){score+=10;round++;$('#score').textContent='SCORE '+score;banner('正解！ +10 ⭐','good');nextAt=performance.now()+1400;if(round>=10){phase='finished';nextAt=performance.now()+1500}}else{retryPending=true;wrongHits++;banner('おっと！ 反撃だ！','bad');enemyShots.push({x:u.x,y:u.y+70,target:shipX,life:0});impactAt=performance.now()+530;nextAt=performance.now()+1750}}
 function retryQuestion(){retryPending=false;phase='playing';bullets=[];enemyShots=[];impactAt=0;damageUntil=0;ship.classList.remove('damaged');stage.classList.remove('screen-hit');ufos.forEach(u=>{u.active=true;u.el.style.display='block'});banner('もういちどチャレンジ！','neutral')}
-function showEnd(){phase='modal';$('#panelTitle').textContent='クリア！ 🎉';$('#panelText').innerHTML='10問クリアしました！<br>得点：'+score+'点<br>不正解への発射：'+wrongHits+'回';$('#close').style.display='none';$('#again').style.display='block';$('#overlay').classList.add('open')}
-function reset(){score=0;round=0;wrongHits=0;shipX=562;lastShot=0;ship.classList.remove('hit','damaged');stage.classList.remove('screen-hit');blasts=[];impactAt=0;damageUntil=0;$('#overlay').classList.remove('open');$('#close').style.display='inline-block';$('#again').style.display='none';makeQuestion()}
+function showEnd(){
+ phase='modal';
+ const overlay=$('#overlay');
+ $('#panelTitle').textContent='🏆 クリア！ 🏆';
+ $('#panelText').innerHTML=
+  '<div class="victory-ship" aria-hidden="true">🚀 ✨ 🛸</div>'+
+  '<div class="victory-message">10問ぜんぶクリア！</div>'+
+  (score===100?'<div class="victory-perfect">🌟 PERFECT! 🌟</div>':'')+
+  '<div class="victory-score">得点：'+score+'点</div>'+
+  '<div class="victory-detail">不正解への発射：'+wrongHits+'回</div>';
+ $('#close').style.display='none';
+ $('#again').style.display='block';
+ overlay.classList.add('victory','open');
+ const confetti=document.createElement('div');
+ confetti.className='victory-confetti';
+ confetti.setAttribute('aria-hidden','true');
+ const colors=['#ffe85c','#ff69c2','#67edff','#a2ff8e','#ff9967','#ffffff'];
+ for(let i=0;i<52;i++){
+  const piece=document.createElement('span');
+  piece.className='victory-piece';
+  piece.style.setProperty('--x',(Math.random()*100).toFixed(1)+'%');
+  piece.style.setProperty('--w',(4+Math.random()*7).toFixed(1)+'px');
+  piece.style.setProperty('--h',(7+Math.random()*11).toFixed(1)+'px');
+  piece.style.setProperty('--color',colors[i%colors.length]);
+  piece.style.setProperty('--duration',(3.2+Math.random()*2.6).toFixed(2)+'s');
+  piece.style.setProperty('--delay',(-Math.random()*5).toFixed(2)+'s');
+  piece.style.setProperty('--drift',((Math.random()-.5)*135).toFixed(1)+'px');
+  confetti.appendChild(piece);
+ }
+ overlay.prepend(confetti);
+ for(let i=0;i<2;i++){
+  const fw=document.createElement('div');
+  fw.className='victory-firework f'+(i+1);
+  fw.setAttribute('aria-hidden','true');
+  overlay.prepend(fw);
+ }
+}
+function reset(){score=0;round=0;wrongHits=0;shipX=562;lastShot=0;ship.classList.remove('hit','damaged');stage.classList.remove('screen-hit');blasts=[];impactAt=0;damageUntil=0;$('#overlay').classList.remove('open','victory');$('#overlay').querySelectorAll('.victory-confetti,.victory-firework').forEach(el=>el.remove());$('#close').style.display='inline-block';$('#again').style.display='none';makeQuestion()}
 function action(id,flag){if(id==='left')holdL=flag;if(id==='right')holdR=flag;if(id==='fire')holdF=flag;$('#'+id).classList.toggle('pressed',flag);if(flag&&id==='fire')shoot(performance.now())}
 // Prevent iOS long-press selection and native image dragging in the game.
 const gameStage = document.getElementById('stage');
